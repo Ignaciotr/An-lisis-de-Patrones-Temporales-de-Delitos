@@ -1,0 +1,272 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+install.packages("readxl")
+install.packages("ggplot2")
+install.packages("sf")
+tinytex::install_tinytex()
+install.packages("rmarkdown")
+
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+
+```
+
+---
+title: "Análisis de delitos en CABA"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+------------------------------------------------------------------------
+
+## Proyecto final diplomatura Data Science
+
+## Análisis de Patrones Temporales de Delitos en CABA (2019)
+
+## Contenido
+
+1.  **Objetivo.**
+
+2.  **Relevancia del problema.**
+
+3.  **Herramientas y tecnologías utilizadas.**
+
+4.  **Datos disponibles.**
+
+5.  **Métodos de análisis.**
+
+6.  **Interpretación y Conclusiones.**
+
+    ------------------------------------------------------------------------
+
+## Objetivo
+
+**\
+**El proyecto se enfoca en realizar un análisis de patrones temporales de delitos en la Ciudad de Buenos Aires (CABA) utilizando técnicas de ciencias de datos.\
+\
+Reconociendo la importancia crucial de comprender cómo varía la ocurrencia del crimen a lo largo del día y a lo largo de los años, nuestro objetivo principal es identificar tendencias significativas que puedan proporcionar a las autoridades locales una base sólida de información que les permita tomar decisiones informadas en materia de seguridad pública y planificación urbana.
+
+------------------------------------------------------------------------
+
+## Relevancia del problema
+
+En una metrópolis dinámica y densamente poblada, cómo en el caso de la Ciudad de Buenos Aires (CABA), entender cómo varían los delitos a lo largo del día y a lo largo del año resulta fundamental para diseñar estrategias efectivas de prevención del delito y aplicación de la ley.
+
+Por un lado, comprender la relación entre el día de la semana, la hora del día y la ocurrencia de delitos puede ayudar a las autoridades a asignar recursos de manera más eficiente.\
+\
+Por ejemplo, si ciertos tipos de delitos tienden a aumentar durante ciertas horas del día o días de la semana, se pueden implementar patrullajes adicionales o medidas de seguridad específicas en esos momentos y lugares.\
+\
+Comprender los patrones temporales de delitos no solo es importante para mejorar la seguridad pública y la calidad de vida de los residentes, sino que también puede tener implicaciones más amplias para el diseño de políticas públicas, la planificación urbana y la asignación de recursos en la ciudad.\
+\
+Por lo tanto, este análisis no sólo es relevante desde una perspectiva académica, sino que también tiene implicaciones prácticas significativas para la gestión y la gobernanza de la ciudad.
+
+------------------------------------------------------------------------
+
+## Herramientas y tecnologías utilizadas
+
+-   **Excel**
+
+-   **Lenguaje R**
+
+-   **Posit Cloud - Notebook R**
+
+-   **Librerías R: readxl, ggplot2, sf**\
+
+------------------------------------------------------------------------
+
+## Datos disponibles
+
+**Los datasets utilizados fueron extraidos de las fuentes oficiales "datos.gob.ar" y "data.buenosaires.gob.ar", donde el gobierno nacional y el Ciudad Autónoma de Buenos Aires publican su información estadística.\
+\
+Los datos inicialmente abarcan los delitos registrados en cada distrito de la República Argentina, permitiendo así su desglose hasta el nivel de barrios y comunas dentro de la Ciudad Autónoma de Buenos Aires.\
+\
+Debido a limitaciones de memoria y CPU por el uso de una licencia gratuita del software Posit cloud para crear el Notebook R, se decidió acotar el estudio del data set para el periodo 2019 y el distrito de CABA.**
+
+------------------------------------------------------------------------
+
+## Métodos de análisis
+
+**\
+Análisis Exploratorio de Datos (EDA), para el cual se utilizará el lenguaje de progración R mediante las siguientes actividades:**
+
+-   **Preparación de datos:** partimos de datos limpios y extructurados almacenados en un archivo Excel para luego ser cargados en un Data Frame.
+
+```{r}
+library(readxl)
+library(ggplot2)
+
+#invisible(memory.limit(64000))  # Aumenta la memoria límite
+
+#ruta_del_archivo <- "/cloud/project/DataSet/dataset_delitos2019.xlsx"
+#datos_excel <- read_excel(ruta_del_archivo)
+
+datos_excel <- read_excel("DataSet/dataset_delitos2019.xlsx", 
+    col_types = c("date", "numeric", "text", 
+                  "text", "numeric", "text", "numeric", 
+                  "numeric"))
+
+mi_data_frame <- data.frame(datos_excel)
+```
+
+-   **Verificar datos mediante resumén del Date Frame**
+
+```{r}
+summary(mi_data_frame)
+```
+
+-   ***Análisis exploratorio de datos:***
+
+    **Gráfico de Barras**
+
+```{r}
+ggplot(data = mi_data_frame, aes(tipo_delito)) +
+  geom_bar(fill = "cornflowerblue", 
+           color="black") +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +
+  labs(x = "Delito", 
+       y = "Cantidad Registrada", 
+       title = "Delitos por Tipos")
+
+```
+
+**Histogramas**
+
+```{r}
+hist(mi_data_frame$franja_horaria,col = "cornflowerblue",
+     xlab = "Horas del día", ylab = "Frecuencia de Delito",
+     main = "Histograma de Franja Horaria")
+
+# Calcular la media y la mediana
+media <- mean(mi_data_frame$franja_horaria)
+mediana <- median(mi_data_frame$franja_horaria)
+
+# Agregar líneas verticales para la media y la mediana
+abline(v = media, col = "red", lwd = 2, lty = 2)
+abline(v = mediana, col = "blue", lwd = 2, lty = 2)
+
+cat("Media:", media, "\n")
+cat("Mediana:", mediana, "\n")
+
+```
+
+**Histograma por tipo de delito**
+
+```{r}
+Lista_tipo_delito <- unique(mi_data_frame$tipo_delito)
+
+for (tipo in Lista_tipo_delito) {
+  mi_data_frame_homicidio <- subset(mi_data_frame, tipo_delito == tipo)
+
+  hist(mi_data_frame_homicidio$franja_horaria,col = "cornflowerblue",
+     xlab = "Horas del día", ylab = "Frecuencia",
+     main = tipo)
+}  
+```
+
+-   **Visualización de datos*:***
+
+    **Mapas de los hechos delictivos**
+
+```{r}
+#install.packages("sf")
+library(sf)
+
+mi_data_frame_filtrado <- subset(mi_data_frame, long != 0)
+
+puntos_sf <- st_as_sf(mi_data_frame_filtrado, coords = c("long", "lat"))
+
+ggplot() +
+  geom_sf(data = puntos_sf, aes(color = tipo_delito))
+
+```
+
+**Mapas de los hechos delictivos por barrios:**
+
+```{r}
+
+mi_data_frame_filtrado <- subset(mi_data_frame, long != 0)
+
+ggplot() +
+  geom_sf(data = puntos_sf, aes(color = barrio))
+
+```
+
+-   **Análisis de series temporales:**
+
+    ```{r}
+    #Nueva variable Mes del data frame en función de la fecha del echo delictivo
+    mi_data_frame$Mes <- format(mi_data_frame$fecha, "%B") 
+    #Nueva variable Dia del data frame en función de la fecha del echo delictivo
+    mi_data_frame$Dia <- weekdays(mi_data_frame$fecha)
+
+
+    ```
+
+```{r}
+
+ggplot(data = mi_data_frame, aes(Mes)) +
+  geom_bar(fill = "cornflowerblue", 
+           color="black") +
+  scale_x_discrete(limits = c("January", "February", "March", "April", "May", "June",
+                              "July", "August", "September", "October", "November", "December")) +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +  
+  labs(x = "Mes", 
+       y = "Cantidad Registrada", 
+       title = "Delitos por Mes")
+
+
+ggplot(data = mi_data_frame, aes(Dia)) +
+  geom_bar(fill = "cornflowerblue", 
+           color="black")+
+   scale_x_discrete(limits = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")) +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +  
+  labs(x = "Día de la Semana", 
+       y = "Cantidad Registrada", 
+       title = "Delitos por Día de la Semana")  
+
+```
+
+```{r}
+
+mi_data_frame_filtrado <- subset(mi_data_frame, Mes == "April")
+  
+ggplot(data = mi_data_frame_filtrado, aes(fecha)) +
+geom_bar(fill = "cornflowerblue", 
+           color="black")
+
+```
+
+------------------------------------------------------------------------
+
+## Interpretación y Conclusiones
+
+\
+\
+En base a los resultados obtenidos a través de los métodos utilizados hemos llegado a las siguientes interpretaciones:\
+
+1.  **Relación Día/Horario de Delitos en CABA:** Nuestro análisis reveló que los delitos en CABA tienden a tener picos de actividad durante los fines de semana, especialmente durante las horas nocturnas. Los viernes y sábados por la noche son períodos de alta incidencia delictiva, mientras que los días laborables muestran una disminución gradual de la actividad delictiva a medida que avanza la noche. Esto sugiere la influencia de factores como el ocio nocturno y la disponibilidad de personas en las calles durante ciertas horas.
+
+2.  **Tipos de Delitos por Franja Horaria:** Observamos que los tipos de delitos varían según la hora del día. Por ejemplo, los robos con violencia tienden a ser más comunes durante la noche, mientras que los hurtos y robos sin violencia pueden ocurrir con mayor frecuencia durante el día. Además, ciertos delitos, como el vandalismo, muestran una mayor incidencia en determinadas franjas horarias, como las horas de la madrugada.
+
+**Conclusiones:**\
+\
+Nuestro análisis de los patrones temporales de delitos en CABA arroja importantes conclusiones que pueden informar las políticas de seguridad pública y la planificación urbana en la ciudad:
+
+1.  **Necesidad de medidas específicas durante los fines de semana:** Dado el aumento de la actividad delictiva durante los viernes y sábados por la noche, es crucial que las autoridades refuercen la presencia policial y adopten medidas adicionales de seguridad durante estos períodos para mitigar el riesgo de delitos.
+
+2.  **Enfoque en la prevención del delito nocturno:** Dado que muchos delitos, especialmente los robos con violencia, ocurren durante las horas nocturnas, es fundamental implementar estrategias de prevención del delito dirigidas específicamente a proteger a los ciudadanos durante la noche, como la mejora de la iluminación pública y el aumento de la vigilancia en áreas críticas.
+
+3.  **Adaptación de la respuesta policial según los tipos de delitos y las franjas horarias:** Nuestro análisis destaca la importancia de una respuesta policial diferenciada según los tipos de delitos y las horas del día. Es necesario que las autoridades ajusten sus estrategias de patrullaje y vigilancia para abordar eficazmente los diferentes tipos de delitos en momentos específicos del día.
+
+**En resumen, el estudio proporciona una visión detallada de los patrones temporales de delitos en CABA, destacando la necesidad de estrategias de seguridad pública y prevención del delito que sean sensibles a las variaciones en la actividad delictiva a lo largo del tiempo y el espacio en la ciudad.**
